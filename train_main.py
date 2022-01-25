@@ -7,7 +7,7 @@ import random
 import numpy as np
 import copy
 import datetime
-from FedAvg import FedAvg, model_dist, update_global_ema
+from FedAvg import FedAvg, model_dist
 import torch
 from torchvision import transforms
 import torch.backends.cudnn as cudnn
@@ -52,13 +52,6 @@ def test(epoch, checkpoint, data_test, label_test, n_classes):
 
     return AUROC_avg, Accus_avg
 
-AUROCs = []
-Accus = []
-Senss = []
-Specs = []
-
-flag_create = False
-print('done')
 if __name__ == '__main__':
     args = args_parser()
 
@@ -69,10 +62,7 @@ if __name__ == '__main__':
     total_num = sup_num + unsup_num
 
     os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
-    #time_current = datetime.datetime.now().strftime("%m-%d-%H%M-%S")
-    # time_current =f'AggPerComm_ScraEMA40_OfflineAug_{args.lambda_u}Unloss_{args.strong_trans_times}+{args.confidence_threshold}'
-    time_current = '2Sup_DistUncertAvg100+7e3_2LabW_UnSupLr0.021_5RdnCli_nodrop_Always2Times'
-    # ''OnlySup7_6LabW_MetaPlus_LabEachMeta_2SoftMax
+    time_current = 'attempt0'
     if args.log_file_name is None:
         args.log_file_name = 'log-%s' % (datetime.datetime.now().strftime("%m-%d-%H%M-%S"))
     log_path = args.log_file_name + '.log'
@@ -123,20 +113,15 @@ if __name__ == '__main__':
     assert os.path.isdir('partition_strategy'), 'Error: no partition_strategy directory found!'
 
     if args.dataset == 'SVHN':
-        partition = torch.load('partition_strategy/SVHN_noniid_10%labeled_ordered.pth')
+        partition = torch.load('partition_strategy/SVHN_noniid_10%labeled.pth')
         net_dataidx_map = partition['data_partition']
     elif args.dataset == 'cifar100':
-        partition = torch.load('partition_strategy/SVHN_noniid_10%labeled_ordered.pth')
+        partition = torch.load('partition_strategy/cifar100_noniid_10%labeled.pth')
         net_dataidx_map = partition['data_partition']
 
-    if args.dataset == 'skin':
-        X_train, y_train, X_test, y_test = partition_data_allnoniid(
-            args.dataset, 'med_classify_dataset/skin/', train_idxs=train_list, test_idxs=test_list,
-            n_parties=args.num_users,
-            beta=args.beta)
-    else:
-        X_train, y_train, X_test, y_test, _, traindata_cls_counts = partition_data_allnoniid(
-            args.dataset, args.datadir, partition=args.partition, n_parties=total_num, beta=args.beta)
+    X_train, y_train, X_test, y_test, _, traindata_cls_counts = partition_data_allnoniid(
+        args.dataset, args.datadir, partition=args.partition, n_parties=total_num, beta=args.beta)
+
     if args.dataset == 'SVHN':
         X_train = X_train.transpose([0, 2, 3, 1])
         X_test = X_test.transpose([0, 2, 3, 1])
@@ -155,8 +140,6 @@ if __name__ == '__main__':
             checkpoint = torch.load('warmup/cifar100.pth')
         elif args.dataset == 'SVHN':
             checkpoint = torch.load('warmup/SVHN.pth')
-        elif args.dataset == 'skin' and sup_num == 1:
-            checkpoint = torch.load('warmup/skin.pth')
 
         net_glob.load_state_dict(checkpoint['state_dict'])
         start_epoch = 7
@@ -175,9 +158,6 @@ if __name__ == '__main__':
     unsup_net_locals = []
     sup_optim_locals = []
     unsup_optim_locals = []
-    dist_record={}
-    for i in range(total_num):
-        dist_record[i]=[]
 
     dist_scale_f = args.dist_scale
 
@@ -197,7 +177,6 @@ if __name__ == '__main__':
                                         weight_decay=5e-4)
         elif args.opt == 'adamw':
             optimizer = torch.optim.AdamW(sup_net_locals[i].parameters(), lr=args.base_lr, weight_decay=0.02)
-            # SimPLE original paper: lr=0.002, weight_decay=0.02
         if args.resume:
             optimizer.load_state_dict(checkpoint['sup_optimizers'][i])
         sup_optim_locals.append(copy.deepcopy(optimizer.state_dict()))
@@ -218,7 +197,6 @@ if __name__ == '__main__':
         elif args.opt == 'adamw':
             optimizer = torch.optim.AdamW(unsup_net_locals[i - sup_num].parameters(), lr=args.unsup_lr,
                                           weight_decay=0.02)
-            # SimPLE original paper: lr=0.002, weight_decay=0.02
         if args.resume and len(checkpoint['unsup_optimizers']) != 0:
             optimizer.load_state_dict(checkpoint['unsup_optimizers'][i - sup_num])
         unsup_optim_locals.append(copy.deepcopy(optimizer.state_dict()))
@@ -236,17 +214,14 @@ if __name__ == '__main__':
         print("************* Comm round %d begins *************" % com_round)
         loss_locals = []
         clt_this_comm_round = []
-        w_locals_this_comm_round = []  # 本meta_round被选中的client更新后的state_dict
         w_per_meta = []
 
         for meta_round in range(args.meta_round):
             clt_list_this_meta_round = random.sample(list(range(0, total_num)), args.meta_client_num)
-                # clt_list_this_meta_round[0] = 0  ##一定要记得删啊！！！！！！！！！！！！！！！！！
             clt_this_comm_round.extend(clt_list_this_meta_round)
             chosen_sup = [j for j in supervised_user_id if j in clt_list_this_meta_round]
             logger.info(f'Comm round {com_round} meta round {meta_round} chosen client: {clt_list_this_meta_round}')
             w_locals_this_meta_round = []
-            same_pred_num_unsup = []
             for client_idx in clt_list_this_meta_round:
                 if client_idx in supervised_user_id:
                     local = lab_trainer_locals[client_idx]
@@ -262,9 +237,7 @@ if __name__ == '__main__':
                     writer.add_scalar('Supervised loss on sup client %d' % client_idx, loss, global_step=com_round)
 
                     # sup_auc, sup_acc = test(com_round, w, X_test, y_test, n_classes)
-                    # print(f'Sup acc after local train: auc: {sup_auc} acc: {sup_acc} ')
 
-                    w_locals_this_comm_round.append(copy.deepcopy(w))
                     w_locals_this_meta_round.append(copy.deepcopy(w))
                     sup_optim_locals[client_idx] = copy.deepcopy(op)
                     loss_locals.append(copy.deepcopy(loss))
@@ -295,9 +268,7 @@ if __name__ == '__main__':
                         train_dl_local, n_classes)
                     writer.add_scalar('Unsupervised loss on unsup client %d' % client_idx, loss, global_step=com_round)
 
-                    w_locals_this_comm_round.append(copy.deepcopy(w))
                     w_locals_this_meta_round.append(copy.deepcopy(w))
-                    same_pred_num_unsup.append(same_pred_num / each_lenth[client_idx])
                     w_ema_unsup[client_idx - sup_num] = copy.deepcopy(w_ema)
                     unsup_optim_locals[client_idx - sup_num] = copy.deepcopy(op)
                     loss_locals.append(copy.deepcopy(loss))
@@ -325,35 +296,33 @@ if __name__ == '__main__':
             print('Based on data amount: ' + f'{clt_freq_this_meta_round}')
             clt_freq_this_meta_raw = copy.deepcopy(clt_freq_this_meta_round)
 
-            if args.un_dist != '':
-                w_avg_temp = FedAvg(w_locals_this_meta_round, clt_freq_this_meta_round)
-                dist_list = []
-                for cli_idx in range(args.meta_client_num):
-                    dist = model_dist(w_locals_this_meta_round[cli_idx], w_avg_temp)
-                    dist_list.append(dist)
-                print(
-                    'Normed dist * 1e4 : ' + f'{[dist_list[i] * 1e5 / each_lenth_this_meta_raw[i] for i in range(args.meta_client_num)]}')
+            w_avg_temp = FedAvg(w_locals_this_meta_round, clt_freq_this_meta_round)
+            dist_list = []
+            for cli_idx in range(args.meta_client_num):
+                dist = model_dist(w_locals_this_meta_round[cli_idx], w_avg_temp)
+                dist_list.append(dist)
+            print(
+                'Normed dist * 1e4 : ' + f'{[dist_list[i] * 1e5 / each_lenth_this_meta_raw[i] for i in range(args.meta_client_num)]}')
 
-                if len(chosen_sup) != 0:
-                    clt_freq_this_meta_uncer = [
-                        np.exp(-dist_list[i] * 100 / each_lenth_this_meta_raw[i]) * clt_freq_this_meta_round[i] for i
-                        in
-                        range(args.meta_client_num)]
-                    for sup_idx in chosen_sup:
-                        mul_times = args.w_mul_times
-                        clt_freq_this_meta_uncer[clt_list_this_meta_round.index(
-                                sup_idx)] *= mul_times  # (args.w_mul_times/len(chosen_sup))
-                else:
-                    clt_freq_this_meta_uncer = [
-                        np.exp(-dist_list[i] * dist_scale_f / each_lenth_this_meta_raw[i]) * clt_freq_this_meta_round[i]
-                        for i
-                        in range(args.meta_client_num)]
+            if len(chosen_sup) != 0:
+                clt_freq_this_meta_uncer = [
+                    np.exp(-dist_list[i] * 100 / each_lenth_this_meta_raw[i]) * clt_freq_this_meta_round[i] for i
+                    in
+                    range(args.meta_client_num)]
+                for sup_idx in chosen_sup:
+                    mul_times = args.w_mul_times
+                    clt_freq_this_meta_uncer[clt_list_this_meta_round.index(
+                            sup_idx)] *= mul_times  # (args.w_mul_times/len(chosen_sup))
+            else:
+                clt_freq_this_meta_uncer = [
+                    np.exp(-dist_list[i] * dist_scale_f / each_lenth_this_meta_raw[i]) * clt_freq_this_meta_round[i]
+                    for i
+                    in range(args.meta_client_num)]
 
-                total = sum(clt_freq_this_meta_uncer)
-                clt_freq_this_meta_dist = [clt_freq_this_meta_uncer[i] / total for i in range(args.meta_client_num)]
-                clt_freq_this_meta_round = clt_freq_this_meta_dist
-                print('After dist-based uncertainty : ' + f'{clt_freq_this_meta_round}')
-                # print(0)
+            total = sum(clt_freq_this_meta_uncer)
+            clt_freq_this_meta_dist = [clt_freq_this_meta_uncer[i] / total for i in range(args.meta_client_num)]
+            clt_freq_this_meta_round = clt_freq_this_meta_dist
+            print('After dist-based uncertainty : ' + f'{clt_freq_this_meta_round}')
 
             assert sum(clt_freq_this_meta_round) - 1.0 <= 1e-3, "Error: sum(freq) != 0"
             w_this_meta = FedAvg(w_locals_this_meta_round, clt_freq_this_meta_round)
@@ -369,12 +338,7 @@ if __name__ == '__main__':
 
         with torch.no_grad():
             freq = [1 / args.meta_round for i in range(args.meta_round)]
-            w_glob_this = FedAvg(w_per_meta, freq)
-
-            if args.EMA_global != 0.0:
-                update_global_ema(w_glob_this, w_glob, args.EMA_global, com_round - start_epoch)
-            else:
-                w_glob = copy.deepcopy(w_glob_this)
+            w_glob = FedAvg(w_per_meta, freq)
 
         net_glob.load_state_dict(w_glob)
         for i in supervised_user_id:
@@ -383,7 +347,6 @@ if __name__ == '__main__':
             unsup_net_locals[i - sup_num].load_state_dict(w_glob)
 
         loss_avg = sum(loss_locals) / len(loss_locals)
-        print(loss_avg, com_round)
         logger.info(
             '************ Loss Avg {}, LR {}, Round {} ends ************  '.format(loss_avg, args.base_lr, com_round))
         if com_round % 6 == 0:
@@ -396,8 +359,7 @@ if __name__ == '__main__':
                     'unsup_ema_state_dict': w_ema_unsup,
                     'sup_optimizers': sup_optim_locals,
                     'unsup_optimizers': unsup_optim_locals,
-                    'start_epoch': com_round,
-                    'dist_dict': dist_record
+                    'start_epoch': com_round
                 }
                     , save_mode_path
                 )
@@ -407,8 +369,7 @@ if __name__ == '__main__':
                     'unsup_ema_state_dict': w_ema_unsup,
                     'sup_optimizers': sup_optim_locals,
                     'unsup_optimizers': unsup_optim_locals,
-                    'start_epoch': com_round,
-                    'dist_dict': dist_record
+                    'start_epoch': com_round
                 }
                     , save_mode_path
                 )

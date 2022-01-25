@@ -48,7 +48,6 @@ class UnsupervisedLocalUpdate(object):
         if len(args.gpu.split(',')) > 1:
             net = torch.nn.DataParallel(net, device_ids=[i for i in range(round(len(args.gpu) / 2))])
             net_ema = torch.nn.DataParallel(net_ema, device_ids=[i for i in range(round(len(args.gpu) / 2))])
-            # net = torch.nn.DataParallel(net, device_ids=[6,7])
         self.ema_model = net_ema.cuda()
         self.model = net.cuda()
 
@@ -60,12 +59,6 @@ class UnsupervisedLocalUpdate(object):
         self.flag = True
         self.unsup_lr = args.unsup_lr
         self.softmax = nn.Softmax()
-        self.unsupervised_loss = UnsupervisedLoss(
-            loss_type=args.u_loss_type,
-            loss_thresholded=args.u_loss_thresholded,
-            confidence_threshold=args.confidence_threshold,
-            reduction="mean")
-        # self.pairloss = build_pair_loss(args)
         self.max_grad_norm = args.max_grad_norm
         self.norm = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
@@ -79,7 +72,6 @@ class UnsupervisedLocalUpdate(object):
         elif args.opt == 'adamw':
             self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=args.unsup_lr,
                                                weight_decay=0.02)
-            # SimPLE original paper: lr=0.002, weight_decay=0.02
         self.max_warmup_step = round(len(self.data_idxs) / args.batch_size) * args.num_warmup_epochs
         self.ramp_up = LinearRampUp(length=self.max_warmup_step)
 
@@ -112,7 +104,6 @@ class UnsupervisedLocalUpdate(object):
         same_total = 0
         for epoch in range(args.local_ep):
             batch_loss = []
-            # iter_max = len(self.ldr_train)
 
             for i, (_, weak_aug_batch, label_batch) in enumerate(train_dl_local):
                 weak_aug_batch = [weak_aug_batch[version].cuda() for version in range(len(weak_aug_batch))]
@@ -124,6 +115,7 @@ class UnsupervisedLocalUpdate(object):
                 label = label_batch.squeeze()
                 if len(label.shape) == 0:
                     label = label.unsqueeze(dim=0)
+
                 correct_pseu += torch.sum(label[torch.max(sharpened, dim=1)[0] > args.confidence_threshold] == pseu[
                     torch.max(sharpened, dim=1)[0] > args.confidence_threshold].cpu()).item()
                 all_pseu += len(pseu[torch.max(sharpened, dim=1)[0] > args.confidence_threshold])
