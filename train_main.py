@@ -207,9 +207,6 @@ if __name__ == '__main__':
             unlab_trainer_locals[i - sup_num].flag = False
             print('Unsup EMA reloaded')
 
-    # if args.resume and len(checkpoint['unsup_ema_state_dict']) != 0:
-    #     w_ema_unsup = copy.deepcopy(checkpoint['unsup_ema_state_dict'])
-
     for com_round in trange(start_epoch, args.rounds):
         print("************* Comm round %d begins *************" % com_round)
         loss_locals = []

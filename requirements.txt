@@ -1,0 +1,11 @@
+imbalanced_learn==0.8.1
+imblearn==0.0
+matplotlib==3.5.1
+numpy==1.21.2
+pandas==1.3.4
+Pillow==9.0.1
+pytorch_metric_learning==0.9.99
+scikit_learn==1.0.2
+torch==1.10.0
+torchvision==0.11.1
+tqdm==4.62.3

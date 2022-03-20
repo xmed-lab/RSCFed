@@ -30,7 +30,7 @@ def args_parser():
     ### tune
     parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
     parser.add_argument('--start_epoch', type=int, default=0, help='start_epoch')
-    parser.add_argument('--weight_decay', dest="weight_decay", default=0.02, type=float, help='weight decay')
+    #parser.add_argument('--weight_decay', dest="weight_decay", default=0.02, type=float, help='weight decay')
 
     ### costs
     parser.add_argument('--label_uncertainty', type=str, default='U-Ones', help='label type')
@@ -63,7 +63,7 @@ def args_parser():
     parser.add_argument('--conf-threshold',
                         '--confidence-threshold',
                         dest="confidence_threshold",
-                        default=0.,
+                        default=0.9,
                         type=float,
                         help="confidence threshold for pair loss and unsupervised loss")
     ###
@@ -78,6 +78,7 @@ def args_parser():
                         help='times of amplifying weight of supervised model when aggregating')
     parser.add_argument('--unsup_lr', type=float, default=0.021,
                         help='lr of unsupervised clients')
+    parser.add_argument('--sup_scale', type=float or int, default=1, help='scale factor for labeled clients when computing model distance')
     parser.add_argument('--dist_scale', type=float or int, default=1e4,
                         help='scale factor when computing model distance')
     parser.add_argument('--input_sz', type=int, default=32, help='actual input size')
