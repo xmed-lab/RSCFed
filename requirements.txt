@@ -1,6 +1,5 @@
 imbalanced_learn==0.8.1
 imblearn==0.0
-matplotlib==3.5.1
 numpy==1.21.2
 pandas==1.3.4
 Pillow==9.0.1

@@ -233,8 +233,6 @@ if __name__ == '__main__':
                                                            train_dl_local, n_classes)  # network, loss, optimizer
                     writer.add_scalar('Supervised loss on sup client %d' % client_idx, loss, global_step=com_round)
 
-                    # sup_auc, sup_acc = test(com_round, w, X_test, y_test, n_classes)
-
                     w_locals_this_meta_round.append(copy.deepcopy(w))
                     sup_optim_locals[client_idx] = copy.deepcopy(op)
                     loss_locals.append(copy.deepcopy(loss))

@@ -97,7 +97,6 @@ def args_parser():
     #                     type=float,
     #                     help='factor for cosine learning rate decay')
     # parser.add_argument('--global_step', type=int, default=0, help='global_step')
-    # parser.add_argument('--lambda_p', type=float, default=75, help='start_epoch')
     # parser.add_argument('--num_unlabeled', type=int, default=9, help='local epoch')
     args = parser.parse_args()
     return args
