@@ -306,7 +306,7 @@ if __name__ == '__main__':
 
             if len(chosen_sup) != 0:
                 clt_freq_this_meta_uncer = [
-                    np.exp(-dist_list[i] * 100 / each_lenth_this_meta_raw[i]) * clt_freq_this_meta_round[i] for i
+                    np.exp(-dist_list[i] * args.sup_scale / each_lenth_this_meta_raw[i]) * clt_freq_this_meta_round[i] for i
                     in
                     range(args.meta_client_num)]
                 for sup_idx in chosen_sup:
