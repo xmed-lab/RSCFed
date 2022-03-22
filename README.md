@@ -55,3 +55,11 @@ meta_client_num | number of clients in each subset
 w_mul_times | scaling times for labeled clients
 sup_scale | scaling weights for labeled clients when computing model distance
 dist_scale | scaling weights when computing model distance
+
+## Evaluation
+For SVHN dataset, the best model is placed in [final_model](https://github.com/XMed-Lab/RSCFed/tree/main/final_model). For cifar-100 and ISIC2018 dataset, best models could be downloaded [here](https://drive.google.com/drive/folders/1FJKwRI2MTv0SGedVP61AFDgE6ixXdb0q?usp=sharing).
+
+Use the following command to generate the claimed results:
+```
+python test.py
+```
