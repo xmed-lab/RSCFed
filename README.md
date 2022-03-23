@@ -17,7 +17,7 @@ This is the official PyTorch implementation of CVPR 2022 paper "RSCFed: Random S
 ## Run the code
 3. Train model for each dataset. To produce the claimed results for SVHN dataset:
 ```
-python -u train_main.py --dataset=SVHN \
+python train_main.py --dataset=SVHN \
 	--model=simple-cnn \
 	--unsup_num=9 \
 	--batch_size=64 \
@@ -61,5 +61,7 @@ For SVHN dataset, the best model is placed in [final_model](https://github.com/X
 
 Use the following command to generate the claimed results:
 ```
-python test.py
+python test.py --dataset=SVHN \
+	--batch_size=5 \
+	--model=simple-cnn
 ```
