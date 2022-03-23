@@ -13,6 +13,8 @@ This is the official PyTorch implementation of CVPR 2022 paper "RSCFed: Random S
 2. Install dependencies:
 
 		pip install -r requirements.txt
+		
+SVHN and CIFAR-100 dataset will be downloaded automatically once training started.
 
 ## Run the code
 3. Train model for each dataset. To produce the claimed results for SVHN dataset:
