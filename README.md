@@ -65,5 +65,5 @@ Use the following command to generate the claimed results:
 ```
 python test.py --dataset=SVHN \
 	--batch_size=5 \
-	--model=simple-cnn
+	--model=simple-cnn \
 ```
