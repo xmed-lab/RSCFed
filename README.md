@@ -37,6 +37,28 @@ python train_main.py --dataset=SVHN \
 	--sup_scale=100 \
 	--dist_scale=1e4 \
 ```
+For ISIC 2018 dataset, please find the warm-up model [here](https://drive.google.com/drive/folders/1FJKwRI2MTv0SGedVP61AFDgE6ixXdb0q?usp=sharing). To produce the claimed result:
+```
+python train_main.py --dataset=skin \
+	--model=resnet18 \
+	--unsup_num=9 \
+	--batch_size=12 \
+	--lambda_u=0.02 \
+	--opt=sgd \
+	--base_lr=2e-3 \
+	--unsup_lr=1e-3 \
+	--max_grad_norm=5 \
+	--rounds=800 \
+	--meta_round=3 \
+	--meta_client_num=5 \
+	--w_mul_times=200 \
+	--pre_sz=250 \
+	--input_sz=224 \
+	--dist_scale=0.01 \
+	--sup_scale=0.01 \
+	--resume \
+	--from_labeled \
+```
 ## Parameters
 Parameter     | Description
 -------- | -----
