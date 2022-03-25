@@ -67,4 +67,12 @@ python test.py --dataset=SVHN \
 	--batch_size=5 \
 	--model=simple-cnn \
 ```
+For ISIC 2018:
+```
+python test.py --dataset=skin \
+	--batch_size=5 \
+	--model=resnet18 \
+	--pre_sz=250 \
+	--input_sz=224 \
+```
 For different datasets, please modify file path, arguments "dataset" and "model" correspondingly.
