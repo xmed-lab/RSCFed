@@ -17,9 +17,30 @@ This is the official PyTorch implementation of CVPR 2022 paper "RSCFed: Random S
 SVHN and CIFAR-100 dataset will be downloaded automatically once training started.
 
 ## Run the code
-3. Train model for each dataset. To produce the claimed results for SVHN dataset:
+3. Train model for each dataset. 
+To produce the claimed results for SVHN dataset:
 ```
 python train_main.py --dataset=SVHN \
+	--model=simple-cnn \
+	--unsup_num=9 \
+	--batch_size=64 \
+	--lambda_u=0.02 \
+	--opt=sgd \
+	--base_lr=0.03 \
+	--unsup_lr=0.021 \
+	--max_grad_norm=5 \
+	--resume \
+	--from_labeled \
+	--rounds=1000 \
+	--meta_round=3 \
+	--meta_client_num=5 \
+	--w_mul_times=6 \
+	--sup_scale=100 \
+	--dist_scale=1e4 \
+```
+For CIFAR-100 dataset:
+```
+python train_main.py --dataset=cifar100 \
 	--model=simple-cnn \
 	--unsup_num=9 \
 	--batch_size=64 \
@@ -59,6 +80,7 @@ python train_main.py --dataset=skin \
 	--resume \
 	--from_labeled \
 ```
+To produce all the claimed results, please modify the path of warm-up model accordingly. Warm-up models are trained only on labeled clients. 
 ## Parameters
 Parameter     | Description
 -------- | -----
@@ -86,6 +108,12 @@ For SVHN and CIFAR-100 dataset, the best model is placed in [final_model](https:
 Use the following command to generate the claimed results:
 ```
 python test.py --dataset=SVHN \
+	--batch_size=5 \
+	--model=simple-cnn \
+```
+For CIFAR-100:
+```
+python test.py --dataset=cifar100 \
 	--batch_size=5 \
 	--model=simple-cnn \
 ```
