@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This is the official PyTorch implementation of CVPR 2022 paper "RSCFed: Random Sampling Consensus Federated Semi-supervised Learning".
+This is the official PyTorch implementation of CVPR 2022 paper "[RSCFed: Random Sampling Consensus Federated Semi-supervised Learning](https://arxiv.org/abs/2203.13993)".
 ![RSCFed: pipeline](https://github.com/XMed-Lab/RSCFed/blob/main/figure/pipeline_final.png)
 ## Preparation
 1. Create conda environment:
