@@ -126,3 +126,19 @@ python test.py --dataset=skin \
 	--input_sz=224 \
 ```
 For different datasets, please modify file path, arguments "dataset" and "model" correspondingly.
+
+
+## Citation
+
+If this code is useful for your research, please consider citing:
+
+<!-- 
+  ```shell
+@inproceedings{liang2022RSCFed,
+  title={RSCFed: Random Sampling Consensus Federated Semi-supervised Learning},
+  author={Liang, Xiaoxiao and Lin, Yiqun, and Fu, Huazhu, and Zhu, Lei and Li, Xiaomeng},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
+  year={2022}
+}
+
+  ``` -->
