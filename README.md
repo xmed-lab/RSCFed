@@ -132,7 +132,6 @@ For different datasets, please modify file path, arguments "dataset" and "model"
 
 If this code is useful for your research, please consider citing:
 
-<!-- 
   ```shell
 @inproceedings{liang2022RSCFed,
   title={RSCFed: Random Sampling Consensus Federated Semi-supervised Learning},
@@ -141,4 +140,4 @@ If this code is useful for your research, please consider citing:
   year={2022}
 }
 
-  ``` -->
+  ```
