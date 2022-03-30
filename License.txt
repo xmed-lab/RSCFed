@@ -1,5 +1,5 @@
-Copyright (C) <2022> [Insert the name of creator], 
-The Hong Kong University of Science and Technology <[insert email of creator]>
+Copyright (C) <2022> [Xiaoxiao Liang, Xiaomeng Li], 
+The Hong Kong University of Science and Technology <[eexmli@ust.hk]>
 
 This program is free software: you can redistribute it and/or modify it 
 under the terms of the GNU General Public License as published by 
