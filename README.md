@@ -135,7 +135,7 @@ If this code is useful for your research, please consider citing:
   ```shell
 @inproceedings{liang2022rscfed,
   title={RSCFed: Random Sampling Consensus Federated Semi-supervised Learning},
-  author={Liang, Xiaoxiao and Lin, Yiqun, and Fu, Huazhu, and Zhu, Lei and Li, Xiaomeng},
+  author={Liang, Xiaoxiao and Lin, Yiqun and Fu, Huazhu and Zhu, Lei and Li, Xiaomeng},
   booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
   year={2022}
 }
