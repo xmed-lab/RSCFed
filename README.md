@@ -1,4 +1,4 @@
-# RSCFed: Random Sampling Consensus Federated Semi-supervised Learning
+# CVPR 2022: RSCFed: Random Sampling Consensus Federated Semi-supervised Learning
 
 ## Introduction
 
