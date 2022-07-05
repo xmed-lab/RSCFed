@@ -30,7 +30,6 @@ def split(dataset, num_users):
 
 
 def test(epoch, checkpoint, data_test, label_test, n_classes):
-
     net = ModelFedCon(args.model, args.out_dim, n_classes=n_classes)
     if len(args.gpu.split(',')) > 1:
         net = torch.nn.DataParallel(net, device_ids=[i for i in range(round(len(args.gpu) / 2))])
@@ -46,15 +45,17 @@ def test(epoch, checkpoint, data_test, label_test, n_classes):
                                           args.dataset, args.datadir, args.batch_size,
                                           is_labeled=True, is_testing=True, pre_sz=args.pre_sz, input_sz=args.input_sz)
 
-    AUROCs, Accus = epochVal_metrics_test(model, test_dl, args.model, thresh=0.4, n_classes=n_classes)
+    AUROCs, Accus, Pre, Recall = epochVal_metrics_test(model, test_dl, args.model, n_classes=n_classes)
     AUROC_avg = np.array(AUROCs).mean()
     Accus_avg = np.array(Accus).mean()
 
-    return AUROC_avg, Accus_avg
+    return AUROC_avg, Accus_avg, Pre, Recall
+
 
 if __name__ == '__main__':
     args = args_parser()
 
+    # setting of one labelled and x unlabelled
     supervised_user_id = [0]
     unsupervised_user_id = list(range(len(supervised_user_id), args.unsup_num + len(supervised_user_id)))
     sup_num = len(supervised_user_id)
@@ -65,6 +66,11 @@ if __name__ == '__main__':
     time_current = 'attempt0'
     if args.log_file_name is None:
         args.log_file_name = 'log-%s' % (datetime.datetime.now().strftime("%m-%d-%H%M-%S"))
+
+    # create log dir
+    if not os.path.isdir(args.logdir):
+        os.mkdir(args.logdir)
+
     log_path = args.log_file_name + '.log'
     logging.basicConfig(filename=os.path.join(args.logdir, log_path), level=logging.INFO,
                         format='[%(asctime)s.%(msecs)03d] %(message)s', datefmt='%H:%M:%S')
@@ -84,7 +90,7 @@ if __name__ == '__main__':
 
     if args.dataset == 'SVHN':
         if not os.path.isdir('tensorboard/SVHN/' + time_current):
-            os.mkdir('tensorboard/cares_SVHN/' + time_current)
+            os.makedirs('tensorboard/SVHN/' + time_current)
         writer = SummaryWriter('tensorboard/SVHN/' + time_current)
 
     elif args.dataset == 'cifar100':
@@ -230,7 +236,7 @@ if __name__ == '__main__':
                                                                     data_idxs=net_dataidx_map[client_idx],
                                                                     pre_sz=args.pre_sz, input_sz=args.input_sz)
                     w, loss, op = local.train(args, sup_net_locals[client_idx].state_dict(), optimizer,
-                                                           train_dl_local, n_classes)  # network, loss, optimizer
+                                              train_dl_local, n_classes)  # network, loss, optimizer
                     writer.add_scalar('Supervised loss on sup client %d' % client_idx, loss, global_step=com_round)
 
                     w_locals_this_meta_round.append(copy.deepcopy(w))
@@ -301,13 +307,14 @@ if __name__ == '__main__':
 
             if len(chosen_sup) != 0:
                 clt_freq_this_meta_uncer = [
-                    np.exp(-dist_list[i] * args.sup_scale / each_lenth_this_meta_raw[i]) * clt_freq_this_meta_round[i] for i
+                    np.exp(-dist_list[i] * args.sup_scale / each_lenth_this_meta_raw[i]) * clt_freq_this_meta_round[i]
+                    for i
                     in
                     range(args.meta_client_num)]
                 for sup_idx in chosen_sup:
                     mul_times = args.w_mul_times
                     clt_freq_this_meta_uncer[clt_list_this_meta_round.index(
-                            sup_idx)] *= mul_times  # (args.w_mul_times/len(chosen_sup))
+                        sup_idx)] *= mul_times  # (args.w_mul_times/len(chosen_sup))
             else:
                 clt_freq_this_meta_uncer = [
                     np.exp(-dist_list[i] * dist_scale_f / each_lenth_this_meta_raw[i]) * clt_freq_this_meta_round[i]
@@ -368,9 +375,12 @@ if __name__ == '__main__':
                 }
                     , save_mode_path
                 )
-        AUROC_avg, Accus_avg = test(com_round, net_glob.state_dict(), X_test, y_test, n_classes)
+        AUROC_avg, Accus_avg, Pre, Recall = test(com_round, net_glob.state_dict(), X_test, y_test, n_classes)
         writer.add_scalar('AUC', AUROC_avg, global_step=com_round)
         writer.add_scalar('Acc', Accus_avg, global_step=com_round)
+        writer.add_scalar('Pre', Pre, global_step=com_round)
+        writer.add_scalar('Recall', Recall, global_step=com_round)
+
         logger.info("\nTEST Student: Epoch: {}".format(com_round))
-        logger.info("\nTEST AUROC: {:6f}, TEST Accus: {:6f}"
-                    .format(AUROC_avg, Accus_avg))
+        logger.info("\nTEST AUROC: {:6f}, TEST Accus: {:6f}, TEST Pre: {:6f}, TEST Recall: {:6f}"
+                    .format(AUROC_avg, Accus_avg, Pre, Recall))
