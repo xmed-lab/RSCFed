@@ -58,7 +58,7 @@ python train_main.py --dataset=cifar100 \
 	--sup_scale=100 \
 	--dist_scale=1e4 \
 ```
-For ISIC 2018 dataset, please find the warm-up model [here](https://drive.google.com/drive/folders/1FJKwRI2MTv0SGedVP61AFDgE6ixXdb0q?usp=sharing). To produce the claimed result:
+For ISIC 2018 dataset, please find the warm-up model [here](https://drive.google.com/drive/folders/1FJKwRI2MTv0SGedVP61AFDgE6ixXdb0q?usp=sharing). To produce the claimed result: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1CU5rpVJtPb2jO1-pN2kJ0EfOGWaNXZcq?usp=sharing)
 ```
 python train_main.py --dataset=skin \
 	--model=resnet18 \
