@@ -26,7 +26,7 @@ if __name__ == "__main__":
     torch.cuda.manual_seed(args.seed)
 
     if args.dataset == 'SVHN':
-        partition = torch.load('partition_strategy/SVHN_noniid_10%labeled_ordered.pth')
+        partition = torch.load('partition_strategy/SVHN_noniid_10%labeled.pth')
     elif args.dataset == 'cifar100':
         partition = torch.load('partition_strategy/cifar100_noniid_10%labeled.pth')
     elif args.dataset == 'skin':
@@ -77,3 +77,5 @@ if __name__ == "__main__":
     AUROCs, Accus, Pre, Recall = epochVal_metrics_test(model, test_dl,args.model, n_classes=n_classes)
     AUROC_avg = np.array(AUROCs).mean()
     Accus_avg = np.array(Accus).mean()
+
+    print(AUROCs,Accus, Pre, Recall)
