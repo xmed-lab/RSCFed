@@ -78,4 +78,4 @@ if __name__ == "__main__":
     AUROC_avg = np.array(AUROCs).mean()
     Accus_avg = np.array(Accus).mean()
 
-    print(AUROCs,Accus, Pre, Recall)
+    print('Accus:{}, AUC:{}, Precision:{}, Recall:{}'.format(round(Accus * 100, 4), round(AUROCs * 100, 4), round(Pre * 100, 4), round(Recall * 100, 4)))
