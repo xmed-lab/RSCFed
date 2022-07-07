@@ -1,8 +1,27 @@
-from validation import epochVal_metrics_test
+import time
 from options import args_parser
-import os
-import sys
 import logging
+import os
+
+import sys
+#to init cuda before importing torch
+args = args_parser()
+time_current = str(int(time.time()))
+tensorboard_path = os.path.join('tensorboard', args.dataset, time_current)
+if not os.path.isdir(tensorboard_path):
+    os.makedirs(tensorboard_path)
+snapshot_path = os.path.join('model', args.dataset)
+if not os.path.isdir(snapshot_path):
+    os.makedirs(snapshot_path)
+
+logging.basicConfig(filename=tensorboard_path + '/log.txt', level=logging.INFO,
+                    format='[%(asctime)s.%(msecs)03d] %(message)s', datefmt='%H:%M:%S')
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.StreamHandler(sys.stdout))
+
+from torch.utils.tensorboard import SummaryWriter
+from validation import epochVal_metrics_test
 import random
 import numpy as np
 import copy
@@ -17,8 +36,6 @@ from local_supervised import SupervisedLocalUpdate
 from local_unsupervised import UnsupervisedLocalUpdate
 from tqdm import trange
 from cifar_load import get_dataloader, partition_data, partition_data_allnoniid
-from torch.utils.tensorboard import SummaryWriter
-
 
 def split(dataset, num_users):
     num_items = int(len(dataset) / num_users)
@@ -53,8 +70,6 @@ def test(epoch, checkpoint, data_test, label_test, n_classes):
 
 
 if __name__ == '__main__':
-    args = args_parser()
-
     # setting of one labelled and x unlabelled
     supervised_user_id = [0]
     unsupervised_user_id = list(range(len(supervised_user_id), args.unsup_num + len(supervised_user_id)))
@@ -62,22 +77,7 @@ if __name__ == '__main__':
     unsup_num = len(unsupervised_user_id)
     total_num = sup_num + unsup_num
 
-    os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
-    time_current = 'attempt0'
-    if args.log_file_name is None:
-        args.log_file_name = 'log-%s' % (datetime.datetime.now().strftime("%m-%d-%H%M-%S"))
 
-    # create log dir
-    if not os.path.isdir(args.logdir):
-        os.mkdir(args.logdir)
-
-    log_path = args.log_file_name + '.log'
-    logging.basicConfig(filename=os.path.join(args.logdir, log_path), level=logging.INFO,
-                        format='[%(asctime)s.%(msecs)03d] %(message)s', datefmt='%H:%M:%S')
-    logger = logging.getLogger()
-    logger.addHandler(logging.StreamHandler(sys.stdout))
-    logger.info(str(args))
-    logger.info(time_current)
     if args.deterministic:
         cudnn.benchmark = False
         cudnn.deterministic = True
@@ -85,35 +85,11 @@ if __name__ == '__main__':
         np.random.seed(args.seed)
         torch.manual_seed(args.seed)
         torch.cuda.manual_seed(args.seed)
-    if not os.path.isdir('tensorboard'):
-        os.mkdir('tensorboard')
 
-    if args.dataset == 'SVHN':
-        if not os.path.isdir('tensorboard/SVHN/' + time_current):
-            os.makedirs('tensorboard/SVHN/' + time_current)
-        writer = SummaryWriter('tensorboard/SVHN/' + time_current)
 
-    elif args.dataset == 'cifar100':
-        if not os.path.isdir('tensorboard/cifar100/' + time_current):
-            os.mkdir('tensorboard/cifar100/' + time_current)
-        writer = SummaryWriter('tensorboard/cifar100/' + time_current)
-
-    elif args.dataset == 'skin':
-        if not os.path.isdir('tensorboard/skin/' + time_current):
-            os.mkdir('tensorboard/skin/' + time_current)
-        writer = SummaryWriter('tensorboard/skin/' + time_current)
-
-    snapshot_path = 'model/'
-    if not os.path.isdir(snapshot_path):
-        os.mkdir(snapshot_path)
-    if args.dataset == 'SVHN':
-        snapshot_path = 'model/SVHN/'
-    if args.dataset == 'cifar100':
-        snapshot_path = 'model/cifar100/'
-    if args.dataset == 'skin':
-        snapshot_path = 'model/skin/'
-    if not os.path.isdir(snapshot_path):
-        os.mkdir(snapshot_path)
+    logger.info(str(args))
+    logging.info(time_current)
+    writer = SummaryWriter(tensorboard_path)
 
     print('==> Reloading data partitioning strategy..')
     assert os.path.isdir('partition_strategy'), 'Error: no partition_strategy directory found!'
@@ -124,9 +100,15 @@ if __name__ == '__main__':
     elif args.dataset == 'cifar100':
         partition = torch.load('partition_strategy/cifar100_noniid_10%labeled.pth')
         net_dataidx_map = partition['data_partition']
+    elif args.dataset=='skin':
+        partition = torch.load('partition_strategy/skin_noniid_beta0.8.pth')
+        net_dataidx_map = partition['data_partition']
+        train_idxs=partition['train_list']
+        test_idxs=partition['test_list']
 
+    # because only load_skin needs train and test ids
     X_train, y_train, X_test, y_test, _, traindata_cls_counts = partition_data_allnoniid(
-        args.dataset, args.datadir, partition=args.partition, n_parties=total_num, beta=args.beta)
+        args.dataset, args.datadir, train_idxs=train_idxs, test_idxs=test_idxs,partition=args.partition, n_parties=total_num, beta=args.beta)
 
     if args.dataset == 'SVHN':
         X_train = X_train.transpose([0, 2, 3, 1])
@@ -146,6 +128,8 @@ if __name__ == '__main__':
             checkpoint = torch.load('warmup/cifar100.pth')
         elif args.dataset == 'SVHN':
             checkpoint = torch.load('warmup/SVHN.pth')
+        elif args.dataset=='skin':
+            checkpoint = torch.load('warmup/skin_warmup.pth')
 
         net_glob.load_state_dict(checkpoint['state_dict'])
         start_epoch = 7
@@ -223,7 +207,7 @@ if __name__ == '__main__':
             clt_list_this_meta_round = random.sample(list(range(0, total_num)), args.meta_client_num)
             clt_this_comm_round.extend(clt_list_this_meta_round)
             chosen_sup = [j for j in supervised_user_id if j in clt_list_this_meta_round]
-            logger.info(f'Comm round {com_round} meta round {meta_round} chosen client: {clt_list_this_meta_round}')
+            logging.info(f'Comm round {com_round} meta round {meta_round} chosen client: {clt_list_this_meta_round}')
             w_locals_this_meta_round = []
             for client_idx in clt_list_this_meta_round:
                 if client_idx in supervised_user_id:
@@ -242,7 +226,7 @@ if __name__ == '__main__':
                     w_locals_this_meta_round.append(copy.deepcopy(w))
                     sup_optim_locals[client_idx] = copy.deepcopy(op)
                     loss_locals.append(copy.deepcopy(loss))
-                    logger.info(
+                    logging.info(
                         'Labeled client {} sample num: {} training loss : {} lr : {}'.format(client_idx,
                                                                                              len(train_ds_local),
                                                                                              loss,
@@ -273,7 +257,7 @@ if __name__ == '__main__':
                     w_ema_unsup[client_idx - sup_num] = copy.deepcopy(w_ema)
                     unsup_optim_locals[client_idx - sup_num] = copy.deepcopy(op)
                     loss_locals.append(copy.deepcopy(loss))
-                    logger.info(
+                    logging.info(
                         'Unlabeled client {} sample num: {} Training loss: {}, unsupervised loss ratio: {}, lr {}, {} pseu out of {} are correct, {} correct by model, {} correct by ema before train, {} by model during train, total {}'.format(
                             client_idx, len(train_ds_local), loss,
                             ratio,
@@ -349,7 +333,7 @@ if __name__ == '__main__':
             unsup_net_locals[i - sup_num].load_state_dict(w_glob)
 
         loss_avg = sum(loss_locals) / len(loss_locals)
-        logger.info(
+        logging.info(
             '************ Loss Avg {}, LR {}, Round {} ends ************  '.format(loss_avg, args.base_lr, com_round))
         if com_round % 6 == 0:
             if not os.path.isdir(snapshot_path + time_current):
@@ -381,6 +365,6 @@ if __name__ == '__main__':
         writer.add_scalar('Pre', Pre, global_step=com_round)
         writer.add_scalar('Recall', Recall, global_step=com_round)
 
-        logger.info("\nTEST Student: Epoch: {}".format(com_round))
-        logger.info("\nTEST AUROC: {:6f}, TEST Accus: {:6f}, TEST Pre: {:6f}, TEST Recall: {:6f}"
+        logging.info("\nTEST Student: Epoch: {}".format(com_round))
+        logging.info("\nTEST AUROC: {:6f}, TEST Accus: {:6f}, TEST Pre: {:6f}, TEST Recall: {:6f}"
                     .format(AUROC_avg, Accus_avg, Pre, Recall))

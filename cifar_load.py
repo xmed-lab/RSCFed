@@ -3,10 +3,12 @@ import torchvision.transforms as transforms
 import torch.utils.data as data
 import logging
 from dataloaders import dataset
-
+import sys
 logging.basicConfig()
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler(sys.stdout))
+
 from datasets import CIFAR10_truncated, SVHN_truncated, CIFAR100_truncated
 import pandas as pd
 
@@ -52,7 +54,7 @@ def load_SVHN_data(datadir):
 
 def load_skin_data(datadir, train_idxs, test_idxs):  # idxs相对所有data
     CLASS_NAMES = ['akiec', 'bcc', 'bkl', 'df', 'mel', 'nv', 'vasc']
-    all_data_path = 'med_classify_dataset/HAM10000_metadata'
+    all_data_path = 'med_classify_dataset/HAM10000_metadata.csv'
     all_data_df = pd.read_csv(all_data_path)
     all_data_df = pd.concat([all_data_df['image_id'], all_data_df['dx']], axis=1)
 
@@ -119,7 +121,7 @@ def partition_data(dataset, datadir, logdir, partition, n_parties, labeled_num, 
         min_require_size = 10
         K = 10
         # min_require_size = 100
-        sup_size = int(labeled_num *len(y_train) / 10)
+        sup_size = int(len(y_train) / 10)
         N = y_train.shape[0] - sup_size
         net_dataidx_map = {}
         for sup_i in range(labeled_num):
@@ -193,7 +195,7 @@ def partition_data_allnoniid(dataset, datadir, train_idxs=None, test_idxs=None, 
             traindata_cls_counts = record_net_data_stats(y_train, net_dataidx_map)
         return X_train, y_train, X_test, y_test, net_dataidx_map, traindata_cls_counts
     else:
-        return np.array(X_train), np.array(y_train), np.array(X_test), np.array(y_test)
+        return np.array(X_train), np.array(y_train), np.array(X_test), np.array(y_test),-1,-1
 
 
 def get_dataloader(args, data_np, label_np, dataset_type, datadir, train_bs, is_labeled=None, data_idxs=None,
