@@ -2,7 +2,8 @@ from options import args_parser
 import logging
 import os
 import sys
-#to init cuda before importing torch
+
+# to init cuda before importing torch
 args = args_parser()
 
 logging.basicConfig(filename=args.tensorboard_path + '/log.txt', level=logging.INFO,
@@ -27,6 +28,7 @@ from local_supervised import SupervisedLocalUpdate
 from local_unsupervised import UnsupervisedLocalUpdate
 from tqdm import trange
 from cifar_load import get_dataloader, partition_data, partition_data_allnoniid
+
 
 def split(dataset, num_users):
     num_items = int(len(dataset) / num_users)
@@ -68,7 +70,6 @@ if __name__ == '__main__':
     unsup_num = len(unsupervised_user_id)
     total_num = sup_num + unsup_num
 
-
     if args.deterministic:
         cudnn.benchmark = False
         cudnn.deterministic = True
@@ -77,29 +78,30 @@ if __name__ == '__main__':
         torch.manual_seed(args.seed)
         torch.cuda.manual_seed(args.seed)
 
-
     logger.info(str(args))
     logging.info(args.time_current)
     writer = SummaryWriter(args.tensorboard_path)
 
     print('==> Reloading data partitioning strategy..')
     assert os.path.isdir('partition_strategy'), 'Error: no partition_strategy directory found!'
-
+    train_idxs = None
+    test_idxs = None
     if args.dataset == 'SVHN':
         partition = torch.load('partition_strategy/SVHN_noniid_10%labeled.pth')
         net_dataidx_map = partition['data_partition']
     elif args.dataset == 'cifar100':
         partition = torch.load('partition_strategy/cifar100_noniid_10%labeled.pth')
         net_dataidx_map = partition['data_partition']
-    elif args.dataset=='skin':
+    elif args.dataset == 'skin':
         partition = torch.load('partition_strategy/skin_noniid_beta0.8.pth')
         net_dataidx_map = partition['data_partition']
-        train_idxs=partition['train_list']
-        test_idxs=partition['test_list']
+        train_idxs = partition['train_list']
+        test_idxs = partition['test_list']
 
     # because only load_skin needs train and test ids
     X_train, y_train, X_test, y_test, _, traindata_cls_counts = partition_data_allnoniid(
-        args.dataset, args.datadir, train_idxs=train_idxs, test_idxs=test_idxs,partition=args.partition, n_parties=total_num, beta=args.beta)
+        args.dataset, args.datadir, train_idxs=train_idxs, test_idxs=test_idxs, partition=args.partition,
+        n_parties=total_num, beta=args.beta)
 
     if args.dataset == 'SVHN':
         X_train = X_train.transpose([0, 2, 3, 1])
@@ -119,7 +121,7 @@ if __name__ == '__main__':
             checkpoint = torch.load('warmup/cifar100.pth')
         elif args.dataset == 'SVHN':
             checkpoint = torch.load('warmup/SVHN.pth')
-        elif args.dataset=='skin':
+        elif args.dataset == 'skin':
             checkpoint = torch.load('warmup/skin_warmup.pth')
 
         net_glob.load_state_dict(checkpoint['state_dict'])
@@ -358,4 +360,4 @@ if __name__ == '__main__':
 
         logging.info("\nTEST Student: Epoch: {}".format(com_round))
         logging.info("\nTEST AUROC: {:6f}, TEST Accus: {:6f}, TEST Pre: {:6f}, TEST Recall: {:6f}"
-                    .format(AUROC_avg, Accus_avg, Pre, Recall))
+                     .format(AUROC_avg, Accus_avg, Pre, Recall))
