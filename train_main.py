@@ -330,8 +330,8 @@ if __name__ == '__main__':
             '************ Loss Avg {}, LR {}, Round {} ends ************  '.format(loss_avg, args.base_lr, com_round))
         if com_round % 6 == 0:
             if not os.path.isdir(args.snapshot_path + args.time_current):
-                os.mkdir(args.snapshot_path + args.time_current)
-            save_mode_path = os.path.join(args.snapshot_path + args.time_current, 'epoch_' + str(com_round) + '.pth')
+                os.mkdir(os.path.join(args.snapshot_path , args.time_current))
+            save_mode_path = os.path.join(args.snapshot_path, args.time_current, 'epoch_' + str(com_round) + '.pth')
             if len(args.gpu) != 1:
                 torch.save({
                     'state_dict': net_glob.module.state_dict(),
