@@ -329,7 +329,7 @@ if __name__ == '__main__':
         logging.info(
             '************ Loss Avg {}, LR {}, Round {} ends ************  '.format(loss_avg, args.base_lr, com_round))
         if com_round % 6 == 0:
-            if not os.path.isdir(args.snapshot_path + args.time_current):
+            if not os.path.isdir(os.path.join(args.snapshot_path , args.time_current)):
                 os.mkdir(os.path.join(args.snapshot_path , args.time_current))
             save_mode_path = os.path.join(args.snapshot_path, args.time_current, 'epoch_' + str(com_round) + '.pth')
             if len(args.gpu) != 1:
