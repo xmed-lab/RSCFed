@@ -119,7 +119,7 @@ def partition_data(dataset, datadir, logdir, partition, n_parties, labeled_num, 
         min_require_size = 10
         K = 10
         # min_require_size = 100
-        sup_size = int(len(y_train) / 10)
+        sup_size = int(labeled_num *len(y_train) / 10)
         N = y_train.shape[0] - sup_size
         net_dataidx_map = {}
         for sup_i in range(labeled_num):
