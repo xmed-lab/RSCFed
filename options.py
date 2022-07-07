@@ -1,7 +1,6 @@
 import argparse
 import os
-# python train_main.py --dataset=SVHN --model=simple-cnn --unsup_num=9 --batch_size=64 --lambda_u=0.02 --opt=sgd --base_lr=0.03 --unsup_lr=0.021 --max_grad_norm=5 --resume --from_labeled --rounds=1000  --meta_round=3 --meta_client_num=5 --w_mul_times=6 --sup_scale=100 --dist_scale=1e4
-
+import time
 def args_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--root_path', type=str, default='med_classify_dataset/skin',
@@ -101,5 +100,15 @@ def args_parser():
     # parser.add_argument('--global_step', type=int, default=0, help='global_step')
     # parser.add_argument('--num_unlabeled', type=int, default=9, help='local epoch')
     args = parser.parse_args()
+
     os.environ['CUDA_VISIBLE_DEVICES']=args.gpu
+
+    args.time_current = str(int(time.time()))
+    args.tensorboard_path = os.path.join('tensorboard', args.dataset, args.time_current)
+    if not os.path.isdir(args.tensorboard_path):
+        os.makedirs(args.tensorboard_path)
+    args.snapshot_path = os.path.join('model', args.dataset)
+    if not os.path.isdir(args.snapshot_path):
+        os.makedirs(args.snapshot_path)
+
     return args

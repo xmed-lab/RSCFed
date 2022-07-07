@@ -1,20 +1,11 @@
-import time
 from options import args_parser
 import logging
 import os
-
 import sys
 #to init cuda before importing torch
 args = args_parser()
-time_current = str(int(time.time()))
-tensorboard_path = os.path.join('tensorboard', args.dataset, time_current)
-if not os.path.isdir(tensorboard_path):
-    os.makedirs(tensorboard_path)
-snapshot_path = os.path.join('model', args.dataset)
-if not os.path.isdir(snapshot_path):
-    os.makedirs(snapshot_path)
 
-logging.basicConfig(filename=tensorboard_path + '/log.txt', level=logging.INFO,
+logging.basicConfig(filename=args.tensorboard_path + '/log.txt', level=logging.INFO,
                     format='[%(asctime)s.%(msecs)03d] %(message)s', datefmt='%H:%M:%S')
 
 logger = logging.getLogger(__name__)
@@ -88,8 +79,8 @@ if __name__ == '__main__':
 
 
     logger.info(str(args))
-    logging.info(time_current)
-    writer = SummaryWriter(tensorboard_path)
+    logging.info(args.time_current)
+    writer = SummaryWriter(args.tensorboard_path)
 
     print('==> Reloading data partitioning strategy..')
     assert os.path.isdir('partition_strategy'), 'Error: no partition_strategy directory found!'
@@ -336,9 +327,9 @@ if __name__ == '__main__':
         logging.info(
             '************ Loss Avg {}, LR {}, Round {} ends ************  '.format(loss_avg, args.base_lr, com_round))
         if com_round % 6 == 0:
-            if not os.path.isdir(snapshot_path + time_current):
-                os.mkdir(snapshot_path + time_current)
-            save_mode_path = os.path.join(snapshot_path + time_current, 'epoch_' + str(com_round) + '.pth')
+            if not os.path.isdir(args.snapshot_path + args.time_current):
+                os.mkdir(args.snapshot_path + args.time_current)
+            save_mode_path = os.path.join(args.snapshot_path + args.time_current, 'epoch_' + str(com_round) + '.pth')
             if len(args.gpu) != 1:
                 torch.save({
                     'state_dict': net_glob.module.state_dict(),
