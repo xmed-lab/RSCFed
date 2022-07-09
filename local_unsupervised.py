@@ -10,6 +10,12 @@ import torch.nn as nn
 from utils_SimPLE import label_guessing, sharpen
 from loss.loss import UnsupervisedLoss  # , build_pair_loss
 import logging
+import sys
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.StreamHandler(sys.stdout))
+
+logger.setLevel(logging.INFO)
+
 from torchvision import transforms
 from ramp import LinearRampUp
 
@@ -92,10 +98,10 @@ class UnsupervisedLocalUpdate(object):
         if self.flag:
             self.ema_model.load_state_dict(copy.deepcopy(net_w))
             self.flag = False
-            logging.info('EMA model initialized')
+            logger.info('EMA model initialized')
 
         epoch_loss = []
-        logging.info('Unlabeled client %d begin unsupervised training' % unlabeled_idx)
+        logger.info('Unlabeled client %d begin unsupervised training' % unlabeled_idx)
         correct_pseu = 0
         all_pseu = 0
         test_right = 0

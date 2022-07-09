@@ -1,5 +1,6 @@
 import argparse
-
+import os
+import time
 def args_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--root_path', type=str, default='med_classify_dataset/skin',
@@ -11,7 +12,7 @@ def args_parser():
                         help='maximum epoch number to train')  # adam:2e-4 sgd:2e-3 adamw:2e-3?
     parser.add_argument('--deterministic', type=int, default=1, help='whether use deterministic training')
     parser.add_argument('--seed', type=int, default=1337, help='random seed')
-    parser.add_argument('--gpu', type=str, default='0,1,2', help='GPU to use')
+    parser.add_argument('--gpu', type=str, default='0', help='GPU to use')
     parser.add_argument('--local_ep', type=int, default=1, help='local epoch')
     parser.add_argument('--num_users', type=int, default=10, help='local epoch')
     parser.add_argument('--num_labeled', type=int, default=1, help='local epoch')
@@ -22,7 +23,7 @@ def args_parser():
     parser.add_argument('--beta', type=float, default=0.5,
                         help='The parameter for the dirichlet distribution for data partitioning')
     parser.add_argument('--partition', type=str, default='noniid', help='the data partitioning strategy')
-    parser.add_argument('--dataset', type=str, choices=['cifar10', 'skin', 'SVHN', 'cifar100'], default='cifar10',
+    parser.add_argument('--dataset', type=str, choices=['cifar10', 'skin', 'SVHN', 'cifar100'], default='SVHN',
                         help='dataset used for training')
     parser.add_argument('--datadir', type=str, required=False, default="./data/", help="Data directory")
     parser.add_argument('--model', type=str, default='simple-cnn', help='neural network used in training')
@@ -87,8 +88,8 @@ def args_parser():
     # parser.add_argument('--record_dist', action='store_true', help='resume from checkpoint')
     # parser.add_argument('--add_drop', action='store_true', help='resume from checkpoint')
     # parser.add_argument('--cos_labw', action='store_true', help='resume from checkpoint')
-    # parser.add_argument('--un_dist',default='',type=str,choices=["avg", "prev","mix"], help='resume from checkpoint')
-    # parser.add_argument('--un_dist_onlyunsup', action='store_true', help='resume from checkpoint')
+    parser.add_argument('--un_dist',default='',type=str,choices=["avg", "prev","mix"], help='resume from checkpoint')
+    parser.add_argument('--un_dist_onlyunsup', action='store_true', help='resume from checkpoint')
     # parser.add_argument('--same_pred_unsup', action='store_true', help='resume from checkpoint')
     # parser.add_argument('--inverse', action='store_true', help='resume from checkpoint')
     # parser.add_argument('--agg_per_meta', action='store_true', help='resume from checkpoint')
@@ -99,4 +100,15 @@ def args_parser():
     # parser.add_argument('--global_step', type=int, default=0, help='global_step')
     # parser.add_argument('--num_unlabeled', type=int, default=9, help='local epoch')
     args = parser.parse_args()
+
+    os.environ['CUDA_VISIBLE_DEVICES']=args.gpu
+
+    args.time_current = str(int(time.time()))
+    args.tensorboard_path = os.path.join('tensorboard', args.dataset, args.time_current)
+    if not os.path.isdir(args.tensorboard_path):
+        os.makedirs(args.tensorboard_path)
+    args.snapshot_path = os.path.join('model', args.dataset)
+    if not os.path.isdir(args.snapshot_path):
+        os.makedirs(args.snapshot_path)
+
     return args

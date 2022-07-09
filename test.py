@@ -1,4 +1,6 @@
-CUDA_VISIBLE_DEVICES="0"
+from options import args_parser
+args = args_parser()
+
 from validation import epochVal_metrics_test
 import numpy as np
 import torch.backends.cudnn as cudnn
@@ -8,15 +10,15 @@ import copy
 import torch
 import torch.optim
 import torch.nn.functional as F
-from options import args_parser
+
 from networks.models import ModelFedCon
-#import matplotlib.pyplot as plt
-#from mpl_toolkits.mplot3d import Axes3D
+
+# import matplotlib.pyplot as plt
+# from mpl_toolkits.mplot3d import Axes3D
 # import json
 
-args = args_parser()
-save_mode_path='final_model/SVHN_best.pth'
-
+save_mode_path = 'final_model/'+args.dataset+'_best.pth'
+# save_mode_path = 'tensorboard/SVHN/epoch_900.pth'
 if __name__ == "__main__":
     cudnn.benchmark = False
     cudnn.deterministic = True
@@ -24,26 +26,23 @@ if __name__ == "__main__":
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed(args.seed)
-
+    train_list=None
+    test_list=None
     if args.dataset == 'SVHN':
-        partition = torch.load('partition_strategy/SVHN_noniid_10%labeled_ordered.pth')
+        partition = torch.load('partition_strategy/SVHN_noniid_10%labeled.pth')
     elif args.dataset == 'cifar100':
         partition = torch.load('partition_strategy/cifar100_noniid_10%labeled.pth')
     elif args.dataset == 'skin':
-        partition = torch.load('partition_strategy/skin_1:9_b0.8.pth')
+        partition = torch.load('partition_strategy/skin_noniid_beta0.8.pth')
         # dict_users = partition['data_partition']
         train_list = partition['train_list']
         test_list = partition['test_list']
     net_dataidx_map = partition['data_partition']
 
-    if args.dataset == 'skin':
-        X_train, y_train, X_test, y_test, _, traindata_cls_counts = partition_data_allnoniid(
-            args.dataset, 'skin/skin/', train_idxs=train_list, test_idxs=test_list,
-            n_parties=args.num_users,
-            beta=args.beta)
-    else:
-        X_train, y_train, X_test, y_test, _, traindata_cls_counts = partition_data_allnoniid(
-            args.dataset, args.datadir, partition=args.partition, n_parties=args.num_users, beta=args.beta)
+    X_train, y_train, X_test, y_test, _, traindata_cls_counts = partition_data_allnoniid(
+        args.dataset, args.datadir, train_idxs=train_list, test_idxs=test_list,
+        n_parties=args.num_users,
+        beta=args.beta)
 
     if args.dataset == 'SVHN':
         X_train = X_train.transpose([0, 2, 3, 1])
@@ -65,15 +64,18 @@ if __name__ == "__main__":
     model = net.cuda()
     model.load_state_dict(checkpoint['state_dict'])
 
-    if args.dataset == 'SVHN' or args.dataset =='cifar100':
+    if args.dataset == 'SVHN' or args.dataset == 'cifar100':
         test_dl, test_ds = get_dataloader(args, X_test, y_test,
                                           args.dataset, args.datadir, args.batch_size,
                                           is_labeled=True, is_testing=True)
     elif args.dataset == 'skin':
         test_dl, test_ds = get_dataloader(args, X_test, y_test,
                                           args.dataset, args.datadir, args.batch_size,
-                                          is_labeled=True, is_testing=True,pre_sz = args.pre_sz,input_sz = args.input_sz)
+                                          is_labeled=True, is_testing=True, pre_sz=args.pre_sz, input_sz=args.input_sz)
 
-    AUROCs, Accus, Pre, Recall = epochVal_metrics_test(model, test_dl,args.model, n_classes=n_classes)
+    AUROCs, Accus, Pre, Recall = epochVal_metrics_test(model, test_dl, args.model, n_classes=n_classes)
     AUROC_avg = np.array(AUROCs).mean()
     Accus_avg = np.array(Accus).mean()
+
+    print('Accus:{}, AUC:{}, Precision:{}, Recall:{}'.format(round(Accus * 100, 4), round(AUROCs * 100, 4),
+                                                             round(Pre * 100, 4), round(Recall * 100, 4)))

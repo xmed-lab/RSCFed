@@ -7,9 +7,11 @@ from torchvision.datasets import MNIST, EMNIST, CIFAR10, CIFAR100, SVHN, Fashion
 import os
 import os.path
 import logging
+import sys
+# logging.basicConfig()
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.StreamHandler(sys.stdout))
 
-logging.basicConfig()
-logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 IMG_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.ppm', '.bmp', '.pgm', '.tif', '.tiff', '.webp')

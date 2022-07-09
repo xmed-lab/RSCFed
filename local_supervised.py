@@ -5,6 +5,12 @@ from options import args_parser
 import copy
 from utils import losses
 import logging
+import sys
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler(sys.stdout))
+
+
 from pytorch_metric_learning import losses
 from networks.models import ModelFedCon
 
@@ -48,7 +54,7 @@ class SupervisedLocalUpdate(object):
 
         loss_fn = torch.nn.CrossEntropyLoss()
         epoch_loss = []
-        logging.info('Begin supervised training')
+        logger.info('Begin supervised training')
         for epoch in range(args.local_ep):
             batch_loss = []
             for i, (_, image_batch, label_batch) in enumerate(dataloader):
